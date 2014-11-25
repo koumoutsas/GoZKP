@@ -62,7 +62,7 @@ func (this *Prover) Respond(challenge Challenge) (ret *Response) {
 
 type verifierHelper interface {
 	left(publicKey PublicKey, proof Proof, response Response) bool
-	right(publicKey PublicKey, proof Proof, response Response) bool
+  	right(publicKey PublicKey, proof Proof, response Response) bool
 }
 
 type Verifier struct {
