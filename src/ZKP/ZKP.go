@@ -50,28 +50,28 @@ func (this *PrivateKey) PublicKey() (PublicKey, error) {
 type Response interface {
 }
 
-type proverHelper interface {
-	constructProof() Proof
+type Proof interface {
+}
+
+type ProverHelper interface {
+	generate() Proof
 	left() Response
 	right() Response
 }
 
-type Proof interface {
-}
-
 type Prover struct {
 	privateKey *PrivateKey
-	proof    Proof
-	response Response
-	helper   proverHelper
+	proof     Proof
+	response  Response
+	helper    ProverHelper
 }
 
-func NewProver(privateKey *PrivateKey) *Prover {
-	return &Prover{privateKey: privateKey}
+func NewProver(privateKey *PrivateKey, helper ProverHelper) *Prover {
+	return &Prover{privateKey: privateKey, helper: helper}
 }
 
 func (this *Prover) ConstructProof() Proof {
-	this.proof = this.helper.constructProof()
+	this.proof = this.helper.generate()
 	return this.proof
 }
 
@@ -85,7 +85,7 @@ func (this *Prover) Respond(challenge Challenge) (ret Response) {
 	return
 }
 
-type verifierHelper interface {
+type VerifierHelper interface {
 	left(publicKey PublicKey, proof Proof, response Response) bool
 	right(publicKey PublicKey, proof Proof, response Response) bool
 }
@@ -94,10 +94,10 @@ type Verifier struct {
 	proof     Proof
 	publicKey PublicKey
 	Challenge Challenge
-	helper    verifierHelper
+	helper    VerifierHelper
 }
 
-func newVerifier(publicKey PublicKey, proof Proof, helper verifierHelper) (*Verifier, error) {
+func NewVerifier(publicKey PublicKey, proof Proof, helper VerifierHelper) (*Verifier, error) {
 	b := make([]byte, 1)
 	_, err := rand.Read(b)
 	if err != nil {
