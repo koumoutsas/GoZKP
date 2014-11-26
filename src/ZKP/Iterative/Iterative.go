@@ -1,29 +1,31 @@
 package Iterative
 
-import (
-	"ZKP"
-	"errors"
-)
-
-type ProverNotifier struct {
-	Proof    chan <- Proof
-	Err      chan <- error
-	Response chan <- Response
-}
+import "ZKP"
 
 type ProverConstructor interface {
 	ConstructProver() *ZKP.Prover
 }
 
+type ProverError struct {
+}
+
+func (this ProverError) Error() string {
+	return "Out of order call"
+}
+
 type Prover struct {
 	prover *ZKP.Prover
 	privateKey *ZKP.PrivateKey
-	Notifier ProverNotifier
+	Notifier struct {
+		Proof    chan <- Proof
+		Error    chan <- ProverError
+		Response chan <- Response
+	}
 	proverConstructor *ProverConstructor
 }
 
 func NewProver(privateKey *ZKP.PrivateKey, proverConstructor *ProverConstructor) *Prover {
-	return Prover{privateKey: privateKey, proverConstructor: proverConstructor}
+	return &Prover{privateKey: privateKey, proverConstructor: proverConstructor}
 }
 
 func (this *Prover) NextRound() {
@@ -33,29 +35,29 @@ func (this *Prover) NextRound() {
 
 func (this *Prover) Challenge(challenge ZKP.Challenge) {
 	if this.prover == nil {
-		this.notifier.Err <- errors.New("Out of order call")
+		this.notifier.Error <- ProverError{}
 	} else {
 		this.notifier.Response <- this.prover.Respond(challenge)
 	}
 }
 
-type VerifierError int
+type VerifierError struct {
+	VerificationFailed  bool
+	InvalidMessageOrder bool
+}
 
-const (
-	VerificationFailed VerifierError = iota
-	InvalidMessageOrder
-)
+func (this VerifierError) Error() string {
+	if this.VerificationFailed {
+		return "verification failed"
+	}
+	if this.InvalidMessageOrder {
+		return "invalid message order"
+	}
+	return "no error"
+}
 
 type VerifierConstructor interface {
 	ConstructVerifier(publicKey *ZKP.PublicKey, proof *ZKP.Proof) *ZKP.Verifier
-}
-
-type VerifierNotifier struct {
-	Challenge chan <- ZKP.Challenge
-	NextRound chan <- bool
-	Error     chan <- VerifierError
-	Success   chan <- bool
-	Progress  chan <- uint64
 }
 
 type Verifier struct {
@@ -63,7 +65,13 @@ type Verifier struct {
 	counter  uint64
 	rounds   uint64
 	publicKey *ZKP.PublicKey
-	Notifier VerifierNotifier
+	Notifier struct {
+		Challenge chan <- ZKP.Challenge
+		NextRound chan <- bool
+		Error     chan <- VerifierError
+		Success   chan <- bool
+		Progress  chan <- uint64
+	}
 	verifierConstructor *VerifierConstructor
 }
 
@@ -82,7 +90,7 @@ func (this *Verifier) Start() {
 
 func (this* Verifier) Response(response *ZKP.Response) {
 	if this.verifier == nil {
-		this.Notifier.Error <- InvalidMessageOrder
+		this.Notifier.Error <- VerifierError{InvalidMessageOrder: true}
 		return
 	}
 	if this.verifier.Verify(response) {
@@ -94,6 +102,6 @@ func (this* Verifier) Response(response *ZKP.Response) {
 			this.Notifier.NextRound <- true
 		}
 	} else {
-		this.Notifier.Error <- VerificationFailed
+		this.Notifier.Error <- VerifierError{VerificationFailed: true}
 	}
 }
