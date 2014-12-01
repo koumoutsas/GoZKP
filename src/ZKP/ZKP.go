@@ -19,7 +19,7 @@ type PublicKey interface {
 }
 
 type PublicKeyGenerator interface {
-	generate() PublicKey
+	Generate() PublicKey
 }
 
 type PrivateKey struct {
@@ -39,7 +39,7 @@ func (this *PrivateKey) PublicKey() (PublicKey, error) {
 		if this.generator == nil {
 			return nil, NilGenerator
 		}
-		this.publicKey = this.generator.generate()
+		this.publicKey = this.generator.Generate()
 		if this.publicKey == nil {
 			return nil, ConstructionError
 		}
@@ -54,9 +54,9 @@ type Proof interface {
 }
 
 type ProverHelper interface {
-	generate() Proof
-	left() Response
-	right() Response
+	Generate() Proof
+	Left() Response
+	Right() Response
 }
 
 type Prover struct {
@@ -71,14 +71,14 @@ func NewProver(privateKey *PrivateKey, helper ProverHelper) *Prover {
 }
 
 func (this *Prover) ConstructProof() Proof {
-	this.proof = this.helper.generate()
+	this.proof = this.helper.Generate()
 	return this.proof
 }
 
 func (this *Prover) Respond(challenge Challenge) (ret Response) {
 	switch challenge{
-	case Left: ret = this.helper.left()
-	case Right: ret = this.helper.right()
+	case Left: ret = this.helper.Left()
+	case Right: ret = this.helper.Right()
 	default: panic("Unknown challenge")
 	}
 	this.response = ret
@@ -86,8 +86,8 @@ func (this *Prover) Respond(challenge Challenge) (ret Response) {
 }
 
 type VerifierHelper interface {
-	left(publicKey PublicKey, proof Proof, response Response) bool
-	right(publicKey PublicKey, proof Proof, response Response) bool
+	Left(publicKey PublicKey, proof Proof, response Response) bool
+	Right(publicKey PublicKey, proof Proof, response Response) bool
 }
 
 type Verifier struct {
@@ -113,8 +113,8 @@ func NewVerifier(publicKey PublicKey, proof Proof, helper VerifierHelper) (*Veri
 
 func (this *Verifier) Verify(response Response) bool {
 	switch this.Challenge {
-	case Left: return this.helper.left(this.publicKey, this.proof, response)
-	case Right: return this.helper.right(this.publicKey, this.proof, response)
+	case Left: return this.helper.Left(this.publicKey, this.proof, response)
+	case Right: return this.helper.Right(this.publicKey, this.proof, response)
 	default: panic("Unknown challenge")
 	}
 }

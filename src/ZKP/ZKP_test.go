@@ -1,7 +1,7 @@
 package ZKP
 
-import "testing"
 import (
+	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ type publicKeyGenerator struct {
 	locked bool
 }
 
-func (this publicKeyGenerator) generate() PublicKey {
+func (this publicKeyGenerator) Generate() PublicKey {
 	if this.locked {
 		return nil
 	}
@@ -76,15 +76,15 @@ type response struct {
 type proverHelper struct {
 }
 
-func (this proverHelper) generate() Proof {
+func (this proverHelper) Generate() Proof {
 	return proof{}
 }
 
-func (this proverHelper) left() Response {
+func (this proverHelper) Left() Response {
 	return response{true}
 }
 
-func (this proverHelper) right() Response {
+func (this proverHelper) Right() Response {
 	return response{false}
 }
 
@@ -126,11 +126,11 @@ func TestRepond(t *testing.T) {
 type verifierHelper struct {
 }
 
-func (this verifierHelper) left(publicKey PublicKey, proof Proof, r Response) bool {
+func (this verifierHelper) Left(publicKey PublicKey, proof Proof, r Response) bool {
 	return r.(response).value
 }
 
-func (this verifierHelper) right(publicKey PublicKey, proof Proof, r Response) bool {
+func (this verifierHelper) Right(publicKey PublicKey, proof Proof, r Response) bool {
 	return !r.(response).value
 }
 
